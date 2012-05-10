@@ -8,7 +8,8 @@ import sys
 import time
 
 _NOTIFY = 'growlnotify'
-_STATUS = '/Users/jfred/.doro/status'
+_CONF = os.path.expanduser('~/.doro')
+_STATUS = _CONF + '/status'
 
 _MSGS = {
     'canceled': ('Pomodoro canceled', True),
@@ -29,6 +30,8 @@ def notify(msg, sticky=False):
 
 def log(state, duration):
     now = time.time()
+    if not os.path.exists(_CONF):
+        os.mkdir(_CONF)
     with open(_STATUS, 'w') as f:
         f.write(json.dumps((now, state, duration, now + (duration * 60))))
 
