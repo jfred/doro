@@ -55,25 +55,22 @@ def check_status():
     return state, pct, end - now
 
 
-def print_status(detail=False):
+def print_status(percent=False):
     res = check_status()
     if not res:
         return
     
     status, pct, left = res
-    if detail:
-        mins = int(left / 60)
-        secs = int(left % 60)
-        print "{status} ({pct}%) {mins}:{secs:02d}".format(
+    if percent:
+        print "{status} {pct}%".format(
             status=status,
             pct=pct,
-            mins=mins,
-            secs=secs,
         )
     else:
-        print "{status} ({pct}%)".format(
+        mins = int(left / 60)
+        print "{status} {mins}m".format(
             status=status,
-            pct=pct,
+            mins=mins,
         )
 
 
@@ -101,10 +98,11 @@ def main():
     parser.add_argument('-w', '--work', type=float, default=25)
     parser.add_argument('-r', '--rest', type=float, default=5)
     parser.add_argument('-s', '--state', action="store_true")
+    parser.add_argument('--pct', action="store_true")
 
     args = parser.parse_args()
     if args.state:
-        print_status()
+        print_status(args.pct)
     else:
         if check_status():
             print "Already running"
