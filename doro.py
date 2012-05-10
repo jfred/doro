@@ -10,6 +10,7 @@ import time
 _NOTIFY = 'growlnotify'
 _CONF = os.path.expanduser('~/.doro')
 _STATUS = _CONF + '/status'
+_LOG = _CONF + '/log'
 
 _MSGS = {
     'canceled': ('Pomodoro canceled', True),
@@ -28,12 +29,16 @@ def notify(msg, sticky=False):
         print msg
 
 
-def log(state, duration):
-    now = time.time()
+def log_state(state, duration=0):
+    now = int(time.time())
     if not os.path.exists(_CONF):
         os.mkdir(_CONF)
-    with open(_STATUS, 'w') as f:
-        f.write(json.dumps((now, state, duration, now + (duration * 60))))
+    if state != 'done':
+        with open(_STATUS, 'w') as f:
+            f.write(json.dumps((now, state, duration, now + (duration * 60))))
+
+    with open(_LOG, 'a') as f:
+        f.write('{0}, {1}, {2}\n'.format(now, state, duration))
 
 
 def clear_state():
@@ -77,8 +82,9 @@ def print_status(percent=False):
 def change_state(state, mins=0, **kwargs):
     msg, sticky = _MSGS[state]
     notify(msg.format(mins=mins, **kwargs), sticky)
-    log(state, mins)
+    log_state(state, mins)
     time.sleep(mins * 60)
+    log_state('done')
 
 
 def run(work, rest, catch=True):
