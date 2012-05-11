@@ -13,6 +13,10 @@ My way of working with the [pomodoro technique](http://www.pomodorotechnique.com
 `doro done` - mark existing timer as complete
 
 
+### Dumb Install
+
+`pip install .`
+
 ###Notes
 
 Uses growlnotify, only used on python 2.7, on osx - your mileage will vary.
