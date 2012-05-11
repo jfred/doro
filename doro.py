@@ -11,6 +11,7 @@ _NOTIFY = 'growlnotify'
 _CONF = os.path.expanduser('~/.doro')
 _STATUS = _CONF + '/status'
 _LOG = _CONF + '/log'
+_PID = _CONF + '/pid'
 
 _MSGS = {
     'canceled': ('Pomodoro canceled', True),
@@ -43,6 +44,7 @@ def log_state(state, duration=0):
 
 def clear_state():
     os.remove(_STATUS)
+    os.remove(_PID)
 
 
 def check_status():
@@ -60,23 +62,31 @@ def check_status():
     return state, pct, end - now
 
 
-def print_status(percent=False):
+def status(args):
     res = check_status()
     if not res:
+        print "lazy are we?"
         return
-    
+
     status, pct, left = res
-    if percent:
+    if args.pct:
         print "{status} {pct}%".format(
             status=status,
             pct=pct,
         )
     else:
         mins = int(left / 60)
-        print "{status} {mins}m".format(
-            status=status,
-            mins=mins,
-        )
+        secs = int(left % 60)
+        if mins:
+            print "{status} {mins}m".format(
+                status=status,
+                mins=mins,
+            )
+        else:
+            print "{status} {secs}s".format(
+                status=status,
+                secs=secs,
+            )
 
 
 def change_state(state, mins=0, **kwargs):
@@ -87,34 +97,70 @@ def change_state(state, mins=0, **kwargs):
     log_state('done')
 
 
-def run(work, rest, catch=True):
+def run(args):
+    if check_status():
+        print "Already running"
+        status()
+        sys.exit(1)
+
     def signal_handler(signal, frame):
         change_state('canceled')
         clear_state()
         sys.exit(0)
+
     signal.signal(signal.SIGINT, signal_handler)
-    change_state('work', work)
-    change_state('rest', rest)
+    change_state('work', args.work)
+    change_state('rest', args.rest)
     clear_state()
+
+
+def start(args):
+    # have to come up with a better way to run this module
+    p = subprocess.Popen([
+        'python',
+        sys.argv[0],
+        '-w', str(args.work),
+        '-r', str(args.rest),
+        'force'
+    ])
+    with open(_PID, 'w') as f:
+        f.write(str(p.pid))
+
+
+def cancel(args):
+    with open(_PID, 'r') as f:
+        pid = f.read()
+    subprocess.Popen(['kill', '-s', 'INT', pid])
+
+
+_cmds = {
+    "start": start,
+    "cancel": cancel,
+    "force": run,
+    "status": status,
+}
 
 
 def main():
     parser = argparse.ArgumentParser(
             description="Pomodoro on the command line")
-    parser.add_argument('-w', '--work', type=float, default=25)
-    parser.add_argument('-r', '--rest', type=float, default=5)
-    parser.add_argument('-s', '--state', action="store_true")
-    parser.add_argument('--pct', action="store_true")
+    parser.add_argument('-w', '--work', type=float, default=25,
+            help="minutes to work"
+            )
+    parser.add_argument('-r', '--rest', type=float, default=5,
+            help="minutes to rest"
+            )
+    parser.add_argument('command',
+            choices=["start", "status", "force", "cancel", ],
+            default="start",
+            )
+    parser.add_argument('-p', '--pct',
+            action='store_true',
+            help="show status in percentage complete",
+            )
 
     args = parser.parse_args()
-    if args.state:
-        print_status(args.pct)
-    else:
-        if check_status():
-            print "Already running"
-            print_status()
-            sys.exit(1)
-        run(args.work, args.rest)
+    _cmds[args.command](args)
 
 
 if __name__ == '__main__':
