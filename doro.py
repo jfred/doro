@@ -103,12 +103,17 @@ def run(args):
         status()
         sys.exit(1)
 
-    def signal_handler(signal, frame):
-        change_state('canceled')
+    def signal_handler(sig, frame):
+        if sig == signal.SIGINT:
+            change_state('canceled')
+        elif sig == signal.SIGQUIT:
+            log_state('done - force')
         clear_state()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+
     change_state('work', args.work)
     change_state('rest', args.rest)
     clear_state()
@@ -127,14 +132,25 @@ def start(args):
         f.write(str(p.pid))
 
 
-def cancel(args):
+def send_signal(sig):
+    if not os.path.exists(_PID):
+        print "Not running"
+        sys.exit(1)
     with open(_PID, 'r') as f:
         pid = f.read()
-    subprocess.Popen(['kill', '-s', 'INT', pid])
+    subprocess.Popen(['kill', '-s', sig, pid])
 
+
+def cancel(args):
+    send_signal('INT')
+
+
+def done(args):
+    send_signal('QUIT')
 
 _cmds = {
     "start": start,
+    "done": done,
     "cancel": cancel,
     "force": run,
     "status": status,
@@ -151,7 +167,7 @@ def main():
             help="minutes to rest"
             )
     parser.add_argument('command',
-            choices=["start", "status", "force", "cancel", ],
+            choices=["start", "status", "force", "cancel", "done", ],
             default="start",
             )
     parser.add_argument('-p', '--pct',
