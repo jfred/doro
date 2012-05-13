@@ -171,6 +171,7 @@ _cmds = {
     "start": start,
     "done": done,
     "cancel": cancel,
+    "stop": cancel,
     "force": run,
     "status": status,
     "test": test,
@@ -187,7 +188,7 @@ def main():
             help="minutes to rest"
             )
     parser.add_argument('command',
-            choices=["start", "status", "force", "cancel", "done", "test", ],
+            choices=_cmds.keys(),
             default="start",
             )
     parser.add_argument('-p', '--pct',
