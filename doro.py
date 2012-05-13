@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-_NOTIFY = 'growlnotify'
+_NOTIFY = ['notify-send', 'growlnotify' 'echo']
 _CONF = os.path.expanduser('~/.doro')
 _STATUS = _CONF + '/status'
 _LOG = _CONF + '/log'
@@ -20,11 +20,26 @@ _MSGS = {
 }
 
 
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
+
 def notify(msg, sticky=False):
     try:
-        args = [_NOTIFY, '-m', msg]
-        if sticky:
-            args += ['-s', '-p', 'Emergency']
+        notify = (prog for prog in _NOTIFY if which(prog))
+        args = [notify.next(), msg]
         subprocess.call(args)
     except:
         print msg
@@ -60,6 +75,10 @@ def check_status():
 
     pct = int((now - logged) / (duration * 60) * 100)
     return state, pct, end - now
+
+
+def test(args):
+    notify('testing notification')
 
 
 def status(args):
@@ -154,6 +173,7 @@ _cmds = {
     "cancel": cancel,
     "force": run,
     "status": status,
+    "test": test,
 }
 
 
@@ -167,7 +187,7 @@ def main():
             help="minutes to rest"
             )
     parser.add_argument('command',
-            choices=["start", "status", "force", "cancel", "done", ],
+            choices=["start", "status", "force", "cancel", "done", "test", ],
             default="start",
             )
     parser.add_argument('-p', '--pct',
