@@ -7,7 +7,11 @@ import subprocess
 import sys
 import time
 
-_NOTIFY = ['notify-send', 'growlnotify' 'echo']
+_NOTIFY = [
+    ['notify-send',],
+    ['growlnotify','-m'],
+    ['echo',]
+]
 _CONF = os.path.expanduser('~/.doro')
 _STATUS = _CONF + '/status'
 _LOG = _CONF + '/log'
@@ -38,8 +42,8 @@ def which(program):
 
 def notify(msg, sticky=False):
     try:
-        notify = (prog for prog in _NOTIFY if which(prog))
-        args = [notify.next(), msg]
+        notify = (prog for prog in _NOTIFY if which(prog[0]))
+        args = notify.next() + [msg]
         subprocess.call(args)
     except:
         print msg
